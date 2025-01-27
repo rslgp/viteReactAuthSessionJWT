@@ -21,3 +21,6 @@ install:
 
 	cd $(CURRENT_DIR)
 	cd $(BACKEND_DIR) && npm i
+
+init:
+	make install & make run
