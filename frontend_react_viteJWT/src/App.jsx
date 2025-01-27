@@ -6,6 +6,30 @@ function App() {
   const [refreshToken, setRefreshToken] = useState("");
   const [message, setMessage] = useState("");
 
+  const handleRegister = async () => {
+    try {
+      const response = await fetch("http://localhost:3001/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          username: formData.username,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+      setAccessToken(data.accessToken);
+      setRefreshToken(data.refreshToken);
+      setMessage("Register successful!");
+    } catch (error) {
+      console.log(error);
+      setMessage(`Register failed. ${error}.`);
+    }
+  };
+
   const handleLogin = async () => {
     try {
       const response = await fetch("http://localhost:3001/login", {
@@ -124,6 +148,7 @@ function App() {
           onKeyDown={handleKeyDown}  // Added event listener for Enter key
         />
         <button onClick={handleLogin}>Login</button>
+        <button onClick={handleRegister}>Register</button>
       </div>
       {accessToken && (
         <div>

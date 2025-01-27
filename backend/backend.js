@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const bcrypt = require('bcryptjs'); // Import bcryptjs for password hashing
 
 const app = express();
 const PORT = 3001;
@@ -14,37 +15,66 @@ app.use(bodyParser.json());
 
 // Mock user database
 const users = [
-    { id: 1, username: 'user1', password: 'password1' },
-    { id: 2, username: 'user2', password: 'password2' },
+    { id: 1, username: 'user1', password: '$2a$10$GJrDkWxzC1t3ttQvX4knfu9ESHqFlu7.ZZ7WxwsBkdPp8n61p4YRW' }, // Hashed password
+    { id: 2, username: 'user2', password: '$2a$10$GJrDkWxzC1t3ttQvX4knfu9ESHqFlu7.ZZ7WxwsBkdPp8n61p4YRW' }, // Hashed password
 ];
 
 // Mock refresh token storage (in production, use a database)
 let refreshTokens = [];
 
+// Register endpoint (to simulate user registration)
+app.post('/register', async (req, res) => {
+    const { username, password } = req.body;
+
+    // Check if user already exists
+    if (users.some((user) => user.username === username)) {
+        return res.status(400).json({ message: 'Username already exists' });
+    }
+
+    try {
+        // Hash the password using bcryptjs
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Store the new user (in a real app, you'd store this in a database)
+        const newUser = { id: users.length + 1, username, password: hashedPassword };
+        users.push(newUser);
+
+        res.status(201).json({ message: 'User registered successfully' });
+    } catch (err) {
+        // If there was an error during hashing, send an error response
+        res.status(500).json({ message: 'Error registering user' });
+    }
+});
+
 // Login endpoint
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
     // Find user in the mock database
-    const user = users.find(
-        (u) => u.username === username && u.password === password
-    );
+    const user = users.find((u) => u.username === username);
 
     if (user) {
-        // Generate access token
-        const accessToken = jwt.sign({ userId: user.id, username: user.username }, SECRET_KEY, {
-            expiresIn: '15m', // Short-lived access token
-        });
+        // Compare provided password with the hashed password in the database
+        const isPasswordValid = await bcrypt.compare(password, user.password);
 
-        // Generate refresh token
-        const refreshToken = jwt.sign({ userId: user.id }, REFRESH_SECRET_KEY, {
-            expiresIn: '7d', // Long-lived refresh token
-        });
+        if (isPasswordValid) {
+            // Generate access token
+            const accessToken = jwt.sign({ userId: user.id, username: user.username }, SECRET_KEY, {
+                expiresIn: '15m', // Short-lived access token
+            });
 
-        // Store the refresh token
-        refreshTokens.push(refreshToken);
+            // Generate refresh token
+            const refreshToken = jwt.sign({ userId: user.id }, REFRESH_SECRET_KEY, {
+                expiresIn: '7d', // Long-lived refresh token
+            });
 
-        res.json({ accessToken, refreshToken });
+            // Store the refresh token
+            refreshTokens.push(refreshToken);
+
+            res.json({ accessToken, refreshToken });
+        } else {
+            res.status(401).json({ message: 'Invalid credentials' });
+        }
     } else {
         res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -59,11 +89,10 @@ app.post('/logout', (req, res) => {
     }
 
     // Remove the refresh token from the list
-    refreshTokens = refreshTokens.filter(token => token !== refreshToken);
+    refreshTokens = refreshTokens.filter((token) => token !== refreshToken);
 
     res.json({ message: 'Logout successful' });
 });
-
 
 // Refresh token endpoint
 app.post('/refresh', (req, res) => {
@@ -84,9 +113,13 @@ app.post('/refresh', (req, res) => {
         }
 
         // Generate a new access token
-        const accessToken = jwt.sign({ userId: decoded.userId, username: decoded.username }, SECRET_KEY, {
-            expiresIn: '15m', // New short-lived access token
-        });
+        const accessToken = jwt.sign(
+            { userId: decoded.userId, username: decoded.username },
+            SECRET_KEY,
+            {
+                expiresIn: '15m', // New short-lived access token
+            }
+        );
 
         res.json({ accessToken });
     });
