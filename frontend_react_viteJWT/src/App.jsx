@@ -1,10 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 function App() {
   const [formData, setFormData] = useState({ username: "", password: "" });
-  const [accessToken, setAccessToken] = useState("");
-  const [refreshToken, setRefreshToken] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [message, setMessage] = useState("");
+
+  // Check authentication status on component mount
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  const checkAuthStatus = async () => {
+    try {
+      const response = await fetch("http://localhost:3001/me", {
+        method: "GET",
+        credentials: "include", // Include cookies
+      });
+
+      if (response.ok) {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
+    } catch (error) {
+      console.error("Error checking auth status:", error);
+      setIsAuthenticated(false);
+    }
+  };
 
   const handleRegister = async () => {
     try {
@@ -21,8 +43,6 @@ function App() {
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
-      setAccessToken(data.accessToken);
-      setRefreshToken(data.refreshToken);
       setMessage("Register successful!");
     } catch (error) {
       console.log(error);
@@ -37,6 +57,7 @@ function App() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // Include cookies
         body: JSON.stringify({
           username: formData.username,
           password: formData.password,
@@ -44,9 +65,7 @@ function App() {
       });
 
       if (!response.ok) throw new Error("Login failed");
-      const data = await response.json();
-      setAccessToken(data.accessToken);
-      setRefreshToken(data.refreshToken);
+      setIsAuthenticated(true);
       setMessage("Login successful!");
     } catch (error) {
       console.log(error);
@@ -58,9 +77,7 @@ function App() {
     try {
       const response = await fetch("http://localhost:3001/protected", {
         method: "GET",
-        headers: {
-          Authorization: accessToken,
-        },
+        credentials: "include", // Include cookies
       });
 
       if (!response.ok) throw new Error("Access denied");
@@ -76,15 +93,10 @@ function App() {
     try {
       const response = await fetch("http://localhost:3001/refresh", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ refreshToken }),
+        credentials: "include", // Include cookies
       });
 
       if (!response.ok) throw new Error("Failed to refresh token");
-      const data = await response.json();
-      setAccessToken(data.accessToken);
       setMessage("Access token refreshed!");
     } catch (error) {
       console.log(error);
@@ -96,17 +108,12 @@ function App() {
     try {
       const response = await fetch("http://localhost:3001/logout", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ refreshToken }),
+        credentials: "include", // Include cookies
       });
 
       if (!response.ok) throw new Error("Logout failed");
-      const data = await response.json();
-      setAccessToken("");  // Clear access token
-      setRefreshToken("");  // Clear refresh token
-      setMessage(data.message);
+      setIsAuthenticated(false);
+      setMessage("Logout successful!");
     } catch (error) {
       console.log(error);
       setMessage("Logout failed.");
@@ -129,28 +136,28 @@ function App() {
 
   return (
     <div>
-      <h1>JWT Authentication with Refresh Tokens</h1>
+      <h1>JWT Authentication with Cookies</h1>
       <div>
         <input
           type="text"
-          name="username"  // Set the name attribute to identify the field
+          name="username"
           placeholder="Username"
           value={formData.username}
-          onChange={handleChange}  // Single handler for both fields
-          onKeyDown={handleKeyDown}  // Added event listener for Enter key
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
         />
         <input
           type="password"
-          name="password"  // Set the name attribute to identify the field
+          name="password"
           placeholder="Password"
           value={formData.password}
-          onChange={handleChange}  // Single handler for both fields
-          onKeyDown={handleKeyDown}  // Added event listener for Enter key
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
         />
         <button onClick={handleLogin}>Login</button>
         <button onClick={handleRegister}>Register</button>
       </div>
-      {accessToken && (
+      {isAuthenticated && (
         <div>
           <button onClick={handleProtectedRoute}>Access Protected Route</button>
           <button onClick={handleRefreshToken}>Refresh Access Token</button>
