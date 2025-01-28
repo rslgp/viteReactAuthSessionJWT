@@ -1,6 +1,6 @@
 import { GoogleSheetService } from './GoogleSheetService.js'
 
-class Controller {
+class UserController {
     constructor() {
         this.instance = new GoogleSheetService();
     }
@@ -9,7 +9,7 @@ class Controller {
     }
     async get(username) {
         const rows = await this.instance.readFilteredRow("username", username);
-        return rows[0];
+        return this.instance.rowToJSON(rows[0]);
     }
 
     async has(username) {
@@ -22,13 +22,20 @@ class Controller {
     }
 
     async delete(username) {
-        await this.instance.deleteAllRow("username", username);
+        await this.instance.deleteRow("username", username);
+    }
+    async deleteAllSessions(username) {
+        await this.instance.deleteAllRow("username", username, 1);
     }
 
     async getUserSessions(username) {
         const rows = await this.instance.readFilteredRow("username", username, 1);
-        return rows;
+        let formattedRows = [];
+        for (const row in rows) {
+            formattedRows.push(this.instance.rowToJSON(row));
+        }
+        return formattedRows;
     }
 }
 
-export default new Controller();
+export default new UserController();

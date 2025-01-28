@@ -18,14 +18,14 @@ class GoogleSheetService {
     // static instance;
 
     constructor(sheetID = "13LpsvbsydOoM_aKsjJO3HMmikVutRFnMq-dFsL_LvVc") {
-        // if (GoogleSheetService.instance) {
-        //     return GoogleSheetService.instance;
-        // }
+        if (GoogleSheetService.instance) {
+            return GoogleSheetService.instance;
+        }
 
         // Singleton pattern: initialize the instance only once
-        // GoogleSheetService.instance = this;
+        GoogleSheetService.instance = this;
 
-        this.setup(sheetID)
+        this.setup(sheetID);
     }
 
     // Set up and authenticate the Google Spreadsheet
@@ -50,6 +50,15 @@ class GoogleSheetService {
         await sheet.addRow(data);
         console.log('Row added:', data);
     }
+
+    rowToJSON(row) {
+        const formattedRow = {};
+        row._worksheet._headerValues.forEach((header, index) => {
+            formattedRow[header] = row._rawData[index];
+        });
+        return formattedRow;
+    }
+
     async readFilteredRow(filterColumn, filterValue, sheet_index = 0) {
         // Get the specific sheet by index
         const sheet = await this.accessSheet(sheet_index);
@@ -141,4 +150,4 @@ class GoogleSheetService {
 }
 
 export { GoogleSheetService };
-export default new GoogleSheetService()
+export default new GoogleSheetService();

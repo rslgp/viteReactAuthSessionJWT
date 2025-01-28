@@ -1,4 +1,4 @@
-import controller from "./controller.js";
+import controller from "./UserController.js";
 
 const run = async () => {
     await controller.init();

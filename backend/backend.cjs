@@ -5,7 +5,25 @@ const bodyParser = require('body-parser');
 const cookieParser = require("cookie-parser");
 const bcrypt = require('bcryptjs');
 
-const isPROD = process.env.NODE_ENV === 'production';
+const path = require('path'); // CommonJS path module
+let esm_modules = {};
+let esm_paths = ["./modules/google/UserController.js"];
+const esm_imports = async () => {
+    console.log("loaded compatible import");
+    for (const relativePath of esm_paths) {
+        const absolutePath = path.resolve(__dirname, relativePath);
+        const folders = relativePath.split('/');
+        const className = folders[folders.length - 2] + path.basename(relativePath, '.js');
+        esm_modules[className] = await import(absolutePath);
+        esm_modules[className] = esm_modules[className].default;
+        // console.log(esm_modules[className]);
+        console.log(relativePath);
+    }
+};
+
+let users; // database
+
+const isPROD = false;
 
 const app = express();
 const PORT = 3001;
@@ -42,23 +60,23 @@ const authenticateToken = (req, res, next) => {
 };
 
 // Mock user database
-const users = [
-    { id: 1, username: 'user1', password: '$2a$10$GJrDkWxzC1t3ttQvX4knfu9ESHqFlu7.ZZ7WxwsBkdPp8n61p4YRW' }, // Hashed password
-    { id: 2, username: 'user2', password: '$2a$10$GJrDkWxzC1t3ttQvX4knfu9ESHqFlu7.ZZ7WxwsBkdPp8n61p4YRW' }, // Hashed password
-];
+// const users = [
+//     { id: 1, username: 'user1', password: '$2a$10$GJrDkWxzC1t3ttQvX4knfu9ESHqFlu7.ZZ7WxwsBkdPp8n61p4YRW' }, // Hashed password
+//     { id: 2, username: 'user2', password: '$2a$10$GJrDkWxzC1t3ttQvX4knfu9ESHqFlu7.ZZ7WxwsBkdPp8n61p4YRW' }, // Hashed password
+// ];
 
 // Register endpoint (simulate user registration)
 app.post('/register', async (req, res) => {
     const { username, password } = req.body;
-
-    if (users.some((user) => user.username === username)) {
+    console.log("reg", await users.has(username));
+    if (await users.has(username)) {
         return res.status(400).json({ message: 'Username already exists' });
     }
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = { id: users.length + 1, username, password: hashedPassword };
-        users.push(newUser);
+        const newUser = { username, password: hashedPassword };
+        await users.push(newUser);
 
         res.status(201).json({ message: 'User registered successfully' });
     } catch (err) {
@@ -69,7 +87,8 @@ app.post('/register', async (req, res) => {
 // Login endpoint
 app.post('/login', async (req, res) => {
     const { username, password } = req.body;
-    const user = users.find(u => u.username === username);
+    const user = await users.get(username);
+    console.log(user);
 
     if (!user) {
         return res.status(404).json({ message: 'User not found' });
@@ -145,6 +164,10 @@ app.post('/logout', (req, res) => {
     res.json({ message: "Logout successful" });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+    await esm_imports();
+    console.log(esm_modules);
+
+    users = esm_modules.googleUserController;
     console.log(`Server is running on http://localhost:${PORT}`);
 });

@@ -1,8 +1,19 @@
 import { useState, useEffect } from "react";
 
+// const readJWT = (token) => {
+
+//   // Split the token into its three parts
+//   const [header, payload, signature] = token.split('.');
+
+//   // Decode the Base64-encoded payload
+//   const decodedPayload = JSON.parse(atob(payload));
+//   console.log(decodedPayload);
+// }
+
 function App() {
   const [formData, setFormData] = useState({ username: "", password: "" });
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userLogged, setUserLogged] = useState("");
   const [message, setMessage] = useState("");
 
   // Check authentication status on component mount
@@ -12,13 +23,16 @@ function App() {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch("http://localhost:3001/me", {
+      const response = await fetch("http://localhost:3001/protected", {
         method: "GET",
         credentials: "include", // Include cookies
       });
 
       if (response.ok) {
         setIsAuthenticated(true);
+        const data = await response.json();
+        console.log(data);
+        setUserLogged(data.user.username);
       } else {
         setIsAuthenticated(false);
       }
@@ -66,6 +80,7 @@ function App() {
 
       if (!response.ok) throw new Error("Login failed");
       setIsAuthenticated(true);
+      setUserLogged(formData.username);
       setMessage("Login successful!");
     } catch (error) {
       console.log(error);
@@ -162,6 +177,7 @@ function App() {
           <button onClick={handleProtectedRoute}>Access Protected Route</button>
           <button onClick={handleRefreshToken}>Refresh Access Token</button>
           <button onClick={handleLogout}>Logout</button>
+          <p>User logged: {userLogged}</p>
         </div>
       )}
       <p>{message}</p>

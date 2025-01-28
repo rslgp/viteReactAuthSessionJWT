@@ -1,4 +1,4 @@
-import { StrictMode } from 'react'
+import { StrictMode } from 'react' // causes useEffect load twice
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
