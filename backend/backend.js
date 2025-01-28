@@ -95,7 +95,7 @@ app.post('/login', async (req, res) => {
     const accessToken = jwt.sign({ userId: user.id, username: user.username }, SECRET_KEY, { expiresIn: '15m' });
     const refreshToken = jwt.sign({ userId: user.id, username: user.username }, REFRESH_SECRET_KEY, { expiresIn: '7d' });
     valid_refreshtoken_set.add(refreshToken);
-    await users.addContent({ username: user.username, refresh_token: refreshToken }, 1);
+    await users.addContent({ username: user.username, refreshToken }, 1);
 
 
     // Set the access token as HttpOnly cookie for security
@@ -153,7 +153,7 @@ app.get('/revoke_token', authenticateToken, async (req, res) => {
     if (username) {
         const sessions = await users.getUserSessions(username);
         for (const s of sessions) {
-            valid_refreshtoken_set.delete(s.refresh_token);
+            valid_refreshtoken_set.delete(s.refreshToken);
         }
         await users.deleteAllSessions(username);
     }
@@ -166,13 +166,14 @@ app.get('/protected', authenticateToken, (req, res) => {
     res.json({ message: 'You have access to this protected route!', user: req.user });
 });
 
-const logout = (res) => {
+const logout = async (res) => {
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
 }
 
 // Logout route
-app.post('/logout', (req, res) => {
+app.post('/logout', async (req, res) => {
+    await users.deleteContent('refreshToken', req.cookies.refreshToken, 1);
     logout(res);
     res.json({ message: "Logout successful" });
 });

@@ -28,6 +28,9 @@ class UserController {
     async delete(username) {
         await this.instance.deleteRow("username", username);
     }
+    async deleteContent(filterColumn, filterValue, sheet_index = 0) {
+        await this.instance.deleteAllRow(filterColumn, filterValue, sheet_index);
+    }
     async deleteAllSessions(username) {
         await this.instance.deleteAllRow("username", username, 1);
     }
