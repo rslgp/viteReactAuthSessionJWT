@@ -1,27 +1,13 @@
-const express = require('express');
-const jwt = require('jsonwebtoken');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const cookieParser = require("cookie-parser");
-const bcrypt = require('bcryptjs');
+import express from 'express';
+import jwt from 'jsonwebtoken';
+import cors from 'cors';
+import bodyParser from 'body-parser';
+import cookieParser from 'cookie-parser';
+import bcrypt from 'bcryptjs';
+import UserController from './modules/google/UserController.js';
 
-const path = require('path'); // CommonJS path module
-let esm_modules = {};
-let esm_paths = ["./modules/google/UserController.js"];
-const esm_imports = async () => {
-    console.log("loaded compatible import");
-    for (const relativePath of esm_paths) {
-        const absolutePath = path.resolve(__dirname, relativePath);
-        const folders = relativePath.split('/');
-        const className = folders[folders.length - 2] + path.basename(relativePath, '.js');
-        esm_modules[className] = await import(absolutePath);
-        esm_modules[className] = esm_modules[className].default;
-        // console.log(esm_modules[className]);
-        console.log(relativePath);
-    }
-};
-
-let users; // database
+// Assuming UserController is an instance exported as default
+let users = UserController;
 
 const isPROD = false;
 
@@ -32,7 +18,7 @@ const REFRESH_SECRET_KEY = 'your-refresh-secret-key'; // Separate key for refres
 
 // Middleware
 app.use(cors({
-    origin: '*',
+    origin: 'http://localhost:5173',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true, // Allow cookies to be sent with requests
@@ -42,9 +28,10 @@ app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(express.json());
 
+let valid_refreshtoken_set = new Set();
 // Middleware to verify JWT access token
 const authenticateToken = (req, res, next) => {
-    const { accessToken } = req.cookies;
+    const { accessToken, refreshToken } = req.cookies;
 
     if (!accessToken) {
         return res.status(401).json({ message: "Access denied. No token provided." });
@@ -53,17 +40,19 @@ const authenticateToken = (req, res, next) => {
     try {
         const decoded = jwt.verify(accessToken, SECRET_KEY);
         req.user = decoded;
+
+
+        console.log(valid_refreshtoken_set);
+        if (valid_refreshtoken_set.has(refreshToken) === false) {
+            logout(res);
+            return res.status(403).json({ message: "Invalid or expired token." });
+        }
+
         next();
     } catch (error) {
         return res.status(403).json({ message: "Invalid or expired token." });
     }
 };
-
-// Mock user database
-// const users = [
-//     { id: 1, username: 'user1', password: '$2a$10$GJrDkWxzC1t3ttQvX4knfu9ESHqFlu7.ZZ7WxwsBkdPp8n61p4YRW' }, // Hashed password
-//     { id: 2, username: 'user2', password: '$2a$10$GJrDkWxzC1t3ttQvX4knfu9ESHqFlu7.ZZ7WxwsBkdPp8n61p4YRW' }, // Hashed password
-// ];
 
 // Register endpoint (simulate user registration)
 app.post('/register', async (req, res) => {
@@ -100,8 +89,14 @@ app.post('/login', async (req, res) => {
         return res.status(401).json({ message: 'Invalid password' });
     }
 
+    let sessions = await users.getUserSessions(user.username);
+    console.log("sessions", sessions);
+
     const accessToken = jwt.sign({ userId: user.id, username: user.username }, SECRET_KEY, { expiresIn: '15m' });
     const refreshToken = jwt.sign({ userId: user.id, username: user.username }, REFRESH_SECRET_KEY, { expiresIn: '7d' });
+    valid_refreshtoken_set.add(refreshToken);
+    await users.addContent({ username: user.username, refresh_token: refreshToken }, 1);
+
 
     // Set the access token as HttpOnly cookie for security
     res.cookie('accessToken', accessToken, {
@@ -153,21 +148,51 @@ app.post('/refresh', (req, res) => {
 });
 
 // Protected route example
+app.get('/revoke_token', authenticateToken, async (req, res) => {
+    const { username } = req.user;
+    if (username) {
+        const sessions = await users.getUserSessions(username);
+        for (const s of sessions) {
+            valid_refreshtoken_set.delete(s.refresh_token);
+        }
+        await users.deleteAllSessions(username);
+    }
+
+    res.json({ message: 'revoke sucess!', user: username });
+});
+
+// Protected route example
 app.get('/protected', authenticateToken, (req, res) => {
     res.json({ message: 'You have access to this protected route!', user: req.user });
 });
 
-// Logout route
-app.post('/logout', (req, res) => {
+const logout = (res) => {
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
+}
+
+// Logout route
+app.post('/logout', (req, res) => {
+    logout(res);
     res.json({ message: "Logout successful" });
 });
 
+// on start
 app.listen(PORT, async () => {
-    await esm_imports();
-    console.log(esm_modules);
-
-    users = esm_modules.googleUserController;
+    users = UserController;
+    await users.init();
+    const global_var = await users.getRows(2);
+    console.log(global_var);
+    valid_refreshtoken_set = new Set(JSON.parse(global_var[0].content || '[]'));
     console.log(`Server is running on http://localhost:${PORT}`);
 });
+
+// on exit
+const doBeforeClose = async () => {
+    const valid_refreshtoken = JSON.stringify(Array.from(valid_refreshtoken_set));
+    await users.updateContent({ variable: "valid_refreshtoken", content: valid_refreshtoken }, "variable", "valid_refreshtoken", 2);
+    process.exit(0);
+};
+
+process.on('SIGINT', doBeforeClose);
+process.on('SIGTERM', doBeforeClose);

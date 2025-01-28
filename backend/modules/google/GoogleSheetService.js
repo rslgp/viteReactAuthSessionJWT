@@ -45,14 +45,15 @@ class GoogleSheetService {
     }
 
     // CREATE - Add a new row to the sheet
-    async createRow(data) {
-        const sheet = await this.accessSheet();
+    async createRow(data, sheet_index = 0) {
+        const sheet = await this.accessSheet(sheet_index);
         await sheet.addRow(data);
         console.log('Row added:', data);
     }
 
     rowToJSON(row) {
         const formattedRow = {};
+        console.log(row, row._worksheet);
         row._worksheet._headerValues.forEach((header, index) => {
             formattedRow[header] = row._rawData[index];
         });
@@ -77,6 +78,12 @@ class GoogleSheetService {
     async readRows(sheet_index = 0) {
         const sheet = await this.accessSheet(sheet_index);
         const rows = await sheet.getRows();
+
+        let result = [];
+        for (const row of rows) {
+            result.push(this.rowToJSON(row));
+        }
+        return result;
         console.log('Rows fetched:', rows);
         const json_values = rows.map(r => r._rawData.slice(PUBLIC_INDEX));
         const json_keys = sheet.headerValues.slice(PUBLIC_INDEX); // remove user, pass, iv
@@ -91,37 +98,48 @@ class GoogleSheetService {
     }
 
     // UPDATE - Update an existing row (based on a column value)
-    async updateRow(filterValue, updateData, args) {
-        const { user_pass, iv, tempo_atualizacao } = args;
-        console.log(updateData);
-        const sheet = await this.accessSheet();
-        console.log("sheet", sheet)
-        const rows = await sheet.getRows();
-        console.log("rows", rows, filterValue)
-        const row_result = rows.filter(row => row._rawData[USER_INDEX] === filterValue); // Assuming 'username' is the unique identifier
-        const row = row_result[0];
-        console.log("row", row_result, row, row_result[0]._rawData, sheet.headerValues)
-        const json_values = row_result[0]._rawData;
-        const json_keys = sheet.headerValues;
-        const json_row = json_keys.reduce((acc, key, index) => {
-            acc[key] = json_values[index] || null; // Handle cases where values array is shorter than keys
-            return acc;
-        }, {});
-        console.log("struct", json_row, "password\n\n", user_pass, "iv\n\n", iv, "json_password\n\n", json_row.password, "json_iv\n\n", json_row.iv);
+    // async updateRow(filterValue, updateData, args) {
+    //     const { user_pass, iv, tempo_atualizacao } = args;
+    //     console.log(updateData);
+    //     const sheet = await this.accessSheet();
+    //     console.log("sheet", sheet)
+    //     const rows = await sheet.getRows();
+    //     console.log("rows", rows, filterValue)
+    //     const row_result = rows.filter(row => row._rawData[USER_INDEX] === filterValue); // Assuming 'username' is the unique identifier
+    //     const row = row_result[0];
+    //     console.log("row", row_result, row, row_result[0]._rawData, sheet.headerValues)
+    //     const json_values = row_result[0]._rawData;
+    //     const json_keys = sheet.headerValues;
+    //     const json_row = json_keys.reduce((acc, key, index) => {
+    //         acc[key] = json_values[index] || null; // Handle cases where values array is shorter than keys
+    //         return acc;
+    //     }, {});
+    //     console.log("struct", json_row, "password\n\n", user_pass, "iv\n\n", iv, "json_password\n\n", json_row.password, "json_iv\n\n", json_row.iv);
 
-        //pass auth
+    //     //pass auth
 
+    //     if (row) {
+    //         updateData.tempo_atualizacao = tempo_atualizacao;
+    //         console.log(updateData);
+    //         row.assign(updateData);
+    //         await row.save();
+    //         console.log('Row updated:', row_result);
+    //         return true;
+    //     } else {
+    //         console.log('Row not found.');
+    //         return false;
+    //     }
+    // }
+    async updateRow(updateData, filterColumn, filterValue, sheet_index = 0) {
+        const rows = await this.readFilteredRow(filterColumn, filterValue, sheet_index);
+        console.log(rows);
+        const row = rows[0];
         if (row) {
-            updateData.tempo_atualizacao = tempo_atualizacao;
-            console.log(updateData);
             row.assign(updateData);
             await row.save();
-            console.log('Row updated:', row_result);
             return true;
-        } else {
-            console.log('Row not found.');
-            return false;
         }
+        return false;
     }
 
     // DELETE - Delete a row based on a condition

@@ -135,6 +135,22 @@ function App() {
     }
   };
 
+  const handleRevoke = async () => {
+    try {
+      const response = await fetch("http://localhost:3001/revoke_token", {
+        method: "GET",
+        credentials: "include", // Include cookies
+      });
+
+      if (!response.ok) throw new Error("Revoke failed");
+      setIsAuthenticated(false);
+      setMessage("Revoke successful!");
+    } catch (error) {
+      console.log(error);
+      setMessage("Revoke failed.");
+    }
+  };
+
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
       handleLogin();
@@ -176,6 +192,7 @@ function App() {
         <div>
           <button onClick={handleProtectedRoute}>Access Protected Route</button>
           <button onClick={handleRefreshToken}>Refresh Access Token</button>
+          <button onClick={handleRevoke}>Revoke Sessions</button>
           <button onClick={handleLogout}>Logout</button>
           <p>User logged: {userLogged}</p>
         </div>
