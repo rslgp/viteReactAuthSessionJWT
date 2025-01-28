@@ -173,7 +173,9 @@ const logout = async (res) => {
 
 // Logout route
 app.post('/logout', async (req, res) => {
-    await users.deleteContent('refreshToken', req.cookies.refreshToken, 1);
+    const { refreshToken } = req.cookies;
+    valid_refreshtoken_set.delete(refreshToken);
+    await users.deleteContent('refreshToken', refreshToken, 1);
     logout(res);
     res.json({ message: "Logout successful" });
 });
