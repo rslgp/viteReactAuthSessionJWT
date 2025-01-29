@@ -4,7 +4,7 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import bcrypt from 'bcryptjs';
-import UserController from './modules/google/UserController.js';
+import UserController from './modules/firebase/UserController.js';
 
 let users = {};
 
@@ -77,6 +77,7 @@ app.post('/register', useAPIToken, async (req, res) => {
 
         res.status(201).json({ message: 'User registered successfully' });
     } catch (err) {
+        console.log(err);
         res.status(500).json({ message: 'Error registering user' });
     }
 });
@@ -96,9 +97,6 @@ app.post('/login', useAPIToken, async (req, res) => {
     if (!match) {
         return res.status(401).json({ message: 'Invalid password' });
     }
-
-    let sessions = await users[req.sheetID].getUserSessions(user.username);
-    console.log("sessions", sessions);
 
     const accessToken = jwt.sign({ userId: user.id, username: user.username, API_TOKEN: req.sheetID }, SECRET_KEY, { expiresIn: '15m' });
     const refreshToken = jwt.sign({ userId: user.id, username: user.username, API_TOKEN: req.sheetID }, REFRESH_SECRET_KEY, { expiresIn: '7d' });
@@ -188,31 +186,45 @@ app.post('/logout', useAPIToken, async (req, res) => {
     res.json({ message: "Logout successful" });
 });
 
+// Error handling middleware for CORS
+app.use((err, req, res, next) => {
+    console.log(err);
+    if (err && err.code === 'CORS') {
+        console.error('CORS error: ', err);
+        res.status(403).json({ error: 'CORS error: Request blocked' });
+    } else {
+        console.error('error: ', err);
+        next(err);
+    }
+});
+
 // on start
 const admin_sheetID = "13LpsvbsydOoM_aKsjJO3HMmikVutRFnMq-dFsL_LvVc";
 const GLOBAL_VAR_INDEX = 2;
 const REGISTERED_INDEX = 3;
 app.listen(PORT, async () => {
-    const config = { sheetID: admin_sheetID, worker: UserController.generateWorker() };
-    users[admin_sheetID] = new UserController(config);
-    await users[admin_sheetID].init();
+    // const config = { sheetID: admin_sheetID, worker: UserController.generateWorker() };
+    // users[admin_sheetID] = new UserController(config);
+    // await users[admin_sheetID].init();
 
-    const global_var = await users[admin_sheetID].getRows(GLOBAL_VAR_INDEX);
-    valid_refreshtoken_set = new Set(JSON.parse(global_var[0].content || '[]'));
+    // const global_var = await users[admin_sheetID].getRows(GLOBAL_VAR_INDEX);
+    // valid_refreshtoken_set = new Set(JSON.parse(global_var[0].content || '[]'));
 
-    const registered = await users[admin_sheetID].getRows(REGISTERED_INDEX);
-    for (const row of registered) {
-        const { sheetID, email, key, need_firstSetup } = row;
+    // const registered = await users[admin_sheetID].getRows(REGISTERED_INDEX);
+    // for (const row of registered) {
+    //     const { sheetID, email, key, need_firstSetup } = row;
 
-        const config = { sheetID, worker: UserController.generateWorker(email, key.replace(/\\n/g, "\n")) };
-        users[sheetID] = new UserController(config);
-        await users[sheetID].init();
-        if (need_firstSetup) await users[sheetID].firstSetup();
+    //     const config = { sheetID, worker: UserController.generateWorker(email, key.replace(/\\n/g, "\n")) };
+    //     users[sheetID] = new UserController(config);
+    //     await users[sheetID].init();
+    //     if (need_firstSetup) await users[sheetID].firstSetup();
 
-        row.need_firstSetup = false;
-        row.instance.assign(row);
-        await row.instance.save()
-    }
+    //     row.need_firstSetup = false;
+    //     row.instance.assign(row);
+    //     await row.instance.save()
+    // }
+
+    users[admin_sheetID] = new UserController();
 
     console.log(`Server is running on http://localhost:${PORT}`);
 });
@@ -220,7 +232,8 @@ app.listen(PORT, async () => {
 // on exit
 const doBeforeClose = async () => {
     const valid_refreshtoken = JSON.stringify(Array.from(valid_refreshtoken_set));
-    await users[admin_sheetID].updateContent({ variable: "valid_refreshtoken", content: valid_refreshtoken }, "variable", "valid_refreshtoken", 2);
+    //await users[admin_sheetID].updateContent({ variable: "valid_refreshtoken", content: valid_refreshtoken }, "variable", "valid_refreshtoken", GLOBAL_VAR_INDEX);
+    //await users[admin_sheetID].updateContent({ variable: "valid_refreshtoken", content: valid_refreshtoken }, "global_var", "valid_refreshtoken");
     process.exit(0);
 };
 
