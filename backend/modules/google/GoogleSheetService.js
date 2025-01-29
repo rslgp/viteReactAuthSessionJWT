@@ -73,6 +73,7 @@ class GoogleSheetService {
         row._worksheet._headerValues.forEach((header, index) => {
             formattedRow[header] = row._rawData[index];
         });
+        formattedRow.instance = row;
         return formattedRow;
     }
 

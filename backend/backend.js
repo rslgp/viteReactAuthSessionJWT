@@ -202,11 +202,16 @@ app.listen(PORT, async () => {
 
     const registered = await users[admin_sheetID].getRows(REGISTERED_INDEX);
     for (const row of registered) {
-        const { sheetID, email, key } = row;
+        const { sheetID, email, key, need_firstSetup } = row;
 
         const config = { sheetID, worker: UserController.generateWorker(email, key.replace(/\\n/g, "\n")) };
         users[sheetID] = new UserController(config);
         await users[sheetID].init();
+        if (need_firstSetup) await users[sheetID].firstSetup();
+
+        row.need_firstSetup = false;
+        row.instance.assign(row);
+        await row.instance.save()
     }
 
     console.log(`Server is running on http://localhost:${PORT}`);

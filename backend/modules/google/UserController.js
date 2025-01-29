@@ -1,5 +1,9 @@
 import { GoogleSheetService } from './GoogleSheetService.js'
 
+const SHEET_ID = {
+    user_pass: 0,
+    active_auth_session: 1
+}
 class UserController {
     constructor(config) {
         const { sheetID, worker } = config;
@@ -7,6 +11,30 @@ class UserController {
     }
     async init() {
         await this.instance.init();
+    }
+
+    setHeaders = async (sheet, headers) => {
+        await sheet.setHeaderRow(headers, 1);
+
+    }
+
+    async firstSetup() {
+        const config = { headerValues: [] };
+        const user_content = await this.instance.accessSheet(SHEET_ID.user_pass);
+
+        // config user pass sheet
+        config.headerValues = ['username', 'password'];
+        await user_content.setHeaderRow(config.headerValues, 1);
+
+        //config active session
+        config.headerValues = ['username', 'refreshToken', 'device'];
+        try {
+            const active_auth_session = await this.instance.accessSheet(SHEET_ID.active_auth_session);
+            await active_auth_session.setHeaderRow(config.headerValues, 1);
+
+        } catch (error) {
+            await this.instance.doc.addSheet(config);
+        }
     }
     async get(username) {
         const rows = await this.instance.readFilteredRow("username", username);
@@ -33,11 +61,11 @@ class UserController {
         await this.instance.deleteAllRow(filterColumn, filterValue, sheet_index);
     }
     async deleteAllSessions(username) {
-        await this.instance.deleteAllRow("username", username, 1);
+        await this.instance.deleteAllRow("username", username, SHEET_ID.active_auth_session);
     }
 
     async getUserSessions(username) {
-        const rows = await this.instance.readFilteredRow("username", username, 1);
+        const rows = await this.instance.readFilteredRow("username", username, SHEET_ID.active_auth_session);
         let formattedRows = [];
         for (const row of rows) {
             formattedRows.push(GoogleSheetService.rowToJSON(row));
