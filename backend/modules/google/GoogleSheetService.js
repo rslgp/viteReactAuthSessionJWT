@@ -10,9 +10,6 @@ const serviceAccountAuth = new JWT({
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
 });
 
-const PUBLIC_INDEX = 3;
-const USER_INDEX = 0;
-
 class GoogleSheetService {
     // The static instance will hold the singleton instance of the class
     // static instance;
@@ -70,13 +67,17 @@ class GoogleSheetService {
         console.log('Row added:', data);
     }
 
-    rowToJSON(row) {
+    static rowToJSON(row) {
+        if (!row) return null;
         const formattedRow = {};
-        console.log(row, row._worksheet);
         row._worksheet._headerValues.forEach((header, index) => {
             formattedRow[header] = row._rawData[index];
         });
         return formattedRow;
+    }
+
+    rowToJSON(row) {
+        return GoogleSheetService.rowToJSON(row);
     }
 
     async readFilteredRow(filterColumn, filterValue, sheet_index = 0) {
@@ -100,55 +101,12 @@ class GoogleSheetService {
 
         let result = [];
         for (const row of rows) {
-            result.push(this.rowToJSON(row));
+            result.push(GoogleSheetService.rowToJSON(row));
         }
         return result;
-        console.log('Rows fetched:', rows);
-        const json_values = rows.map(r => r._rawData.slice(PUBLIC_INDEX));
-        const json_keys = sheet.headerValues.slice(PUBLIC_INDEX); // remove user, pass, iv
-        console.log(json_values, json_keys);
-        const json_row = json_keys.reduce((acc, key, index) => {
-            acc[key] = json_values[index] || null; // Handle cases where values array is shorter than keys
-            return acc;
-        }, {});
-        console.log("struct read", json_row);
-
-        return { headers: json_keys, rows: json_values };
     }
 
     // UPDATE - Update an existing row (based on a column value)
-    // async updateRow(filterValue, updateData, args) {
-    //     const { user_pass, iv, tempo_atualizacao } = args;
-    //     console.log(updateData);
-    //     const sheet = await this.accessSheet();
-    //     console.log("sheet", sheet)
-    //     const rows = await sheet.getRows();
-    //     console.log("rows", rows, filterValue)
-    //     const row_result = rows.filter(row => row._rawData[USER_INDEX] === filterValue); // Assuming 'username' is the unique identifier
-    //     const row = row_result[0];
-    //     console.log("row", row_result, row, row_result[0]._rawData, sheet.headerValues)
-    //     const json_values = row_result[0]._rawData;
-    //     const json_keys = sheet.headerValues;
-    //     const json_row = json_keys.reduce((acc, key, index) => {
-    //         acc[key] = json_values[index] || null; // Handle cases where values array is shorter than keys
-    //         return acc;
-    //     }, {});
-    //     console.log("struct", json_row, "password\n\n", user_pass, "iv\n\n", iv, "json_password\n\n", json_row.password, "json_iv\n\n", json_row.iv);
-
-    //     //pass auth
-
-    //     if (row) {
-    //         updateData.tempo_atualizacao = tempo_atualizacao;
-    //         console.log(updateData);
-    //         row.assign(updateData);
-    //         await row.save();
-    //         console.log('Row updated:', row_result);
-    //         return true;
-    //     } else {
-    //         console.log('Row not found.');
-    //         return false;
-    //     }
-    // }
     async updateRow(updateData, filterColumn, filterValue, sheet_index = 0) {
         const rows = await this.readFilteredRow(filterColumn, filterValue, sheet_index);
         console.log(rows);

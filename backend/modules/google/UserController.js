@@ -10,7 +10,7 @@ class UserController {
     }
     async get(username) {
         const rows = await this.instance.readFilteredRow("username", username);
-        return this.instance.rowToJSON(rows[0]);
+        return GoogleSheetService.rowToJSON(rows[0]);
     }
     async getRows(sheet_index) {
         const rows = await this.instance.readRows(sheet_index);
@@ -40,7 +40,7 @@ class UserController {
         const rows = await this.instance.readFilteredRow("username", username, 1);
         let formattedRows = [];
         for (const row of rows) {
-            formattedRows.push(this.instance.rowToJSON(row));
+            formattedRows.push(GoogleSheetService.rowToJSON(row));
         }
         return formattedRows;
     }
@@ -59,5 +59,6 @@ class UserController {
     static generateWorker(email, key) {
         return GoogleSheetService.generateWorker(email, key);
     }
+
 }
 export default UserController;

@@ -190,13 +190,25 @@ app.post('/logout', useAPIToken, async (req, res) => {
 
 // on start
 const admin_sheetID = "13LpsvbsydOoM_aKsjJO3HMmikVutRFnMq-dFsL_LvVc";
+const GLOBAL_VAR_INDEX = 2;
+const REGISTERED_INDEX = 3;
 app.listen(PORT, async () => {
     const config = { sheetID: admin_sheetID, worker: UserController.generateWorker() };
     users[admin_sheetID] = new UserController(config);
     await users[admin_sheetID].init();
-    const global_var = await users[admin_sheetID].getRows(2);
-    console.log(global_var);
+
+    const global_var = await users[admin_sheetID].getRows(GLOBAL_VAR_INDEX);
     valid_refreshtoken_set = new Set(JSON.parse(global_var[0].content || '[]'));
+
+    const registered = await users[admin_sheetID].getRows(REGISTERED_INDEX);
+    for (const row of registered) {
+        const { sheetID, email, key } = row;
+
+        const config = { sheetID, worker: UserController.generateWorker(email, key.replace(/\\n/g, "\n")) };
+        users[sheetID] = new UserController(config);
+        await users[sheetID].init();
+    }
+
     console.log(`Server is running on http://localhost:${PORT}`);
 });
 

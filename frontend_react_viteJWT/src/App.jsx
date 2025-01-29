@@ -11,7 +11,7 @@ import { useState, useEffect } from "react";
 // }
 
 function App() {
-  const jwt_api_token = "13LpsvbsydOoM_aKsjJO3HMmikVutRFnMq-dFsL_LvVc";
+  const jwt_api_token = "1ggBO8KasUln6LjoADt-jTjL-XHltcjBGMikAUCAvLt0";
   const [formData, setFormData] = useState({ username: "", password: "" });
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userLogged, setUserLogged] = useState("");
@@ -145,6 +145,9 @@ function App() {
     try {
       const response = await fetch("http://localhost:3001/revoke_token", {
         method: "GET",
+        headers: {
+          jwt_api_token,
+        },
         credentials: "include", // Include cookies
       });
 
