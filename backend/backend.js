@@ -6,8 +6,7 @@ import cookieParser from 'cookie-parser';
 import bcrypt from 'bcryptjs';
 import UserController from './modules/google/UserController.js';
 
-// Assuming UserController is an instance exported as default
-let users = UserController;
+let users = {};
 
 const isPROD = false;
 
@@ -20,7 +19,7 @@ const REFRESH_SECRET_KEY = 'your-refresh-secret-key'; // Separate key for refres
 app.use(cors({
     origin: 'http://localhost:5173',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'jwt_api_token'],
     credentials: true, // Allow cookies to be sent with requests
 }));
 
@@ -34,7 +33,7 @@ const authenticateToken = (req, res, next) => {
     const { accessToken, refreshToken } = req.cookies;
 
     if (!accessToken) {
-        return res.status(401).json({ message: "Access denied. No token provided." });
+        return res.status(401).json({ message: "Access denied. No token provided" });
     }
 
     try {
@@ -45,27 +44,36 @@ const authenticateToken = (req, res, next) => {
         console.log(valid_refreshtoken_set);
         if (valid_refreshtoken_set.has(refreshToken) === false) {
             logout(res);
-            return res.status(403).json({ message: "Invalid or expired token." });
+            return res.status(403).json({ message: "Invalid or expired token" });
         }
 
         next();
     } catch (error) {
-        return res.status(403).json({ message: "Invalid or expired token." });
+        return res.status(403).json({ message: "Invalid or expired token" });
     }
 };
 
+const useAPIToken = (req, res, next) => {
+    const { jwt_api_token } = req.headers;
+    if (!jwt_api_token) return res.status(403).json({ message: "No jwt_api_token header" });
+
+    req.sheetID = jwt_api_token;
+    if (!users[req.sheetID]) return res.status(403).json({ message: "No valid jwt_api_token header" });
+    next();
+}
+
 // Register endpoint (simulate user registration)
-app.post('/register', async (req, res) => {
+app.post('/register', useAPIToken, async (req, res) => {
     const { username, password } = req.body;
-    console.log("reg", await users.has(username));
-    if (await users.has(username)) {
+    console.log("reg", await users[req.sheetID].has(username));
+    if (await users[req.sheetID].has(username)) {
         return res.status(400).json({ message: 'Username already exists' });
     }
 
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
         const newUser = { username, password: hashedPassword };
-        await users.push(newUser);
+        await users[req.sheetID].push(newUser);
 
         res.status(201).json({ message: 'User registered successfully' });
     } catch (err) {
@@ -74,9 +82,9 @@ app.post('/register', async (req, res) => {
 });
 
 // Login endpoint
-app.post('/login', async (req, res) => {
+app.post('/login', useAPIToken, async (req, res) => {
     const { username, password } = req.body;
-    const user = await users.get(username);
+    const user = await users[req.sheetID].get(username);
     console.log(user);
 
     if (!user) {
@@ -89,13 +97,13 @@ app.post('/login', async (req, res) => {
         return res.status(401).json({ message: 'Invalid password' });
     }
 
-    let sessions = await users.getUserSessions(user.username);
+    let sessions = await users[req.sheetID].getUserSessions(user.username);
     console.log("sessions", sessions);
 
-    const accessToken = jwt.sign({ userId: user.id, username: user.username }, SECRET_KEY, { expiresIn: '15m' });
-    const refreshToken = jwt.sign({ userId: user.id, username: user.username }, REFRESH_SECRET_KEY, { expiresIn: '7d' });
+    const accessToken = jwt.sign({ userId: user.id, username: user.username, API_TOKEN: req.sheetID }, SECRET_KEY, { expiresIn: '15m' });
+    const refreshToken = jwt.sign({ userId: user.id, username: user.username, API_TOKEN: req.sheetID }, REFRESH_SECRET_KEY, { expiresIn: '7d' });
     valid_refreshtoken_set.add(refreshToken);
-    await users.addContent({ username: user.username, refreshToken }, 1);
+    await users[req.sheetID].addContent({ username: user.username, refreshToken }, 1);
 
 
     // Set the access token as HttpOnly cookie for security
@@ -148,14 +156,14 @@ app.post('/refresh', (req, res) => {
 });
 
 // Protected route example
-app.get('/revoke_token', authenticateToken, async (req, res) => {
+app.get('/revoke_token', authenticateToken, useAPIToken, async (req, res) => {
     const { username } = req.user;
     if (username) {
-        const sessions = await users.getUserSessions(username);
+        const sessions = await users[req.sheetID].getUserSessions(username);
         for (const s of sessions) {
             valid_refreshtoken_set.delete(s.refreshToken);
         }
-        await users.deleteAllSessions(username);
+        await users[req.sheetID].deleteAllSessions(username);
     }
 
     res.json({ message: 'revoke sucess!', user: username });
@@ -172,19 +180,21 @@ const logout = async (res) => {
 }
 
 // Logout route
-app.post('/logout', async (req, res) => {
+app.post('/logout', useAPIToken, async (req, res) => {
     const { refreshToken } = req.cookies;
     valid_refreshtoken_set.delete(refreshToken);
-    await users.deleteContent('refreshToken', refreshToken, 1);
+    await users[req.sheetID].deleteContent('refreshToken', refreshToken, 1);
     logout(res);
     res.json({ message: "Logout successful" });
 });
 
 // on start
+const admin_sheetID = "13LpsvbsydOoM_aKsjJO3HMmikVutRFnMq-dFsL_LvVc";
 app.listen(PORT, async () => {
-    users = new UserController();
-    await users.init();
-    const global_var = await users.getRows(2);
+    const config = { sheetID: admin_sheetID, worker: UserController.generateWorker() };
+    users[admin_sheetID] = new UserController(config);
+    await users[admin_sheetID].init();
+    const global_var = await users[admin_sheetID].getRows(2);
     console.log(global_var);
     valid_refreshtoken_set = new Set(JSON.parse(global_var[0].content || '[]'));
     console.log(`Server is running on http://localhost:${PORT}`);
@@ -193,7 +203,7 @@ app.listen(PORT, async () => {
 // on exit
 const doBeforeClose = async () => {
     const valid_refreshtoken = JSON.stringify(Array.from(valid_refreshtoken_set));
-    await users.updateContent({ variable: "valid_refreshtoken", content: valid_refreshtoken }, "variable", "valid_refreshtoken", 2);
+    await users[admin_sheetID].updateContent({ variable: "valid_refreshtoken", content: valid_refreshtoken }, "variable", "valid_refreshtoken", 2);
     process.exit(0);
 };
 

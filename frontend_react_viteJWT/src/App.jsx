@@ -11,6 +11,7 @@ import { useState, useEffect } from "react";
 // }
 
 function App() {
+  const jwt_api_token = "13LpsvbsydOoM_aKsjJO3HMmikVutRFnMq-dFsL_LvVc";
   const [formData, setFormData] = useState({ username: "", password: "" });
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userLogged, setUserLogged] = useState("");
@@ -48,6 +49,7 @@ function App() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          jwt_api_token,
         },
         body: JSON.stringify({
           username: formData.username,
@@ -70,6 +72,7 @@ function App() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          jwt_api_token,
         },
         credentials: "include", // Include cookies
         body: JSON.stringify({
@@ -123,6 +126,9 @@ function App() {
     try {
       const response = await fetch("http://localhost:3001/logout", {
         method: "POST",
+        headers: {
+          jwt_api_token,
+        },
         credentials: "include", // Include cookies
       });
 

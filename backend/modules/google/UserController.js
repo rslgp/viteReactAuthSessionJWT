@@ -1,7 +1,8 @@
 import { GoogleSheetService } from './GoogleSheetService.js'
 
 class UserController {
-    constructor(sheetID, worker) {
+    constructor(config) {
+        const { sheetID, worker } = config;
         this.instance = new GoogleSheetService(sheetID, worker);
     }
     async init() {
@@ -53,6 +54,10 @@ class UserController {
     }
     async updateContent(content_json, column_name, column_value, sheet_index) {
         await this.instance.updateRow(content_json, column_name, column_value, sheet_index);
+    }
+
+    static generateWorker(email, key) {
+        return GoogleSheetService.generateWorker(email, key);
     }
 }
 export default UserController;
