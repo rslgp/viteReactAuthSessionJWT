@@ -97,9 +97,6 @@ app.post('/login', useAPIToken, async (req, res) => {
         return res.status(401).json({ message: 'Invalid password' });
     }
 
-    let sessions = await users[req.sheetID].getUserSessions(user.username);
-    console.log("sessions", sessions);
-
     const accessToken = jwt.sign({ userId: user.id, username: user.username, API_TOKEN: req.sheetID }, SECRET_KEY, { expiresIn: '15m' });
     const refreshToken = jwt.sign({ userId: user.id, username: user.username, API_TOKEN: req.sheetID }, REFRESH_SECRET_KEY, { expiresIn: '7d' });
     valid_refreshtoken_set.add(refreshToken);
