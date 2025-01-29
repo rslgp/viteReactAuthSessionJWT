@@ -17,23 +17,32 @@ class GoogleSheetService {
     // The static instance will hold the singleton instance of the class
     // static instance;
 
-    constructor(sheetID = "13LpsvbsydOoM_aKsjJO3HMmikVutRFnMq-dFsL_LvVc") {
-        if (GoogleSheetService.instance) {
-            return GoogleSheetService.instance;
-        }
+    constructor(sheetID = "13LpsvbsydOoM_aKsjJO3HMmikVutRFnMq-dFsL_LvVc", worker = serviceAccountAuth) {
+        // if (GoogleSheetService.instance) {
+        //     return GoogleSheetService.instance;
+        // }
 
-        // Singleton pattern: initialize the instance only once
-        GoogleSheetService.instance = this;
+        // // Singleton pattern: initialize the instance only once
+        // GoogleSheetService.instance = this;
 
-        this.setup(sheetID);
+        this.sheetID = sheetID;
+        this.worker = worker;
+        this.doc = null;
+
+        // new and after init
+        // this.setup(sheetID, worker);
     }
 
     // Set up and authenticate the Google Spreadsheet
-    async setup(ss_id = this.SPREADSHEET_ID) {
-        this.SPREADSHEET_ID = ss_id;
-        this.doc = new GoogleSpreadsheet(ss_id, serviceAccountAuth);
+    async init() {
+        await this.setup();
+    }
+
+    // Set up and authenticate the Google Spreadsheet
+    async setup() {
+        this.doc = new GoogleSpreadsheet(this.sheetID, this.worker);
         await this.doc.loadInfo();
-        console.log('Google Sheet setup complete!');
+        console.log('Google Sheet setup complete! ' + this.sheetID);
     }
 
     // Access the sheet object (used in CRUD operations)

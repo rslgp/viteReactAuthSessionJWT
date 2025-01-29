@@ -182,7 +182,7 @@ app.post('/logout', async (req, res) => {
 
 // on start
 app.listen(PORT, async () => {
-    users = UserController;
+    users = new UserController();
     await users.init();
     const global_var = await users.getRows(2);
     console.log(global_var);
