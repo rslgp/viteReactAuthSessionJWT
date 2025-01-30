@@ -4,7 +4,7 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import bcrypt from 'bcryptjs';
-import UserController from './modules/google/UserController.js';
+import UserController from './modules/postegre/UserController.js';
 
 let users = {};
 
@@ -158,7 +158,8 @@ app.get('/revoke_token', authenticateToken, useAPIToken, async (req, res) => {
     if (username) {
         const sessions = await users[req.sheetID].getUserSessions(username);
         for (const s of sessions) {
-            valid_refreshtoken_set.delete(s.refreshToken);
+            console.log("revoke_token", s);
+            valid_refreshtoken_set.delete(s.refreshToken || s.refreshtoken); // postgre dont support case sensitive
         }
         await users[req.sheetID].deleteAllSessions(username);
     }
@@ -190,26 +191,34 @@ const admin_sheetID = "13LpsvbsydOoM_aKsjJO3HMmikVutRFnMq-dFsL_LvVc";
 const GLOBAL_VAR_INDEX = 2;
 const REGISTERED_INDEX = 3;
 app.listen(PORT, async () => {
-    const config = { sheetID: admin_sheetID, worker: UserController.generateWorker() };
+    const config = {
+        dbConfig: {
+            host: '0.tcp.sa.ngrok.io',
+            port: 14491,
+            database: 'mydatabase',
+            user: 'myuser',
+            password: 'mypassword'
+        }
+    };
     users[admin_sheetID] = new UserController(config);
     await users[admin_sheetID].init();
 
-    const global_var = await users[admin_sheetID].getRows(GLOBAL_VAR_INDEX);
-    valid_refreshtoken_set = new Set(JSON.parse(global_var[0].content || '[]'));
+    // const global_var = await users[admin_sheetID].getRows(GLOBAL_VAR_INDEX);
+    // valid_refreshtoken_set = new Set(JSON.parse(global_var[0].content || '[]'));
 
-    const registered = await users[admin_sheetID].getRows(REGISTERED_INDEX);
-    for (const row of registered) {
-        const { sheetID, email, key, need_firstSetup } = row;
+    // const registered = await users[admin_sheetID].getRows(REGISTERED_INDEX);
+    // for (const row of registered) {
+    //     const { sheetID, email, key, need_firstSetup } = row;
 
-        const config = { sheetID, worker: UserController.generateWorker(email, key.replace(/\\n/g, "\n")) };
-        users[sheetID] = new UserController(config);
-        await users[sheetID].init();
-        if (need_firstSetup) await users[sheetID].firstSetup();
+    //     const config = { sheetID, worker: UserController.generateWorker(email, key.replace(/\\n/g, "\n")) };
+    //     users[sheetID] = new UserController(config);
+    //     await users[sheetID].init();
+    //     if (need_firstSetup) await users[sheetID].firstSetup();
 
-        row.need_firstSetup = false;
-        row.instance.assign(row);
-        await row.instance.save()
-    }
+    //     row.need_firstSetup = false;
+    //     row.instance.assign(row);
+    //     await row.instance.save()
+    // }
 
     console.log(`Server is running on http://localhost:${PORT}`);
 });
@@ -217,7 +226,7 @@ app.listen(PORT, async () => {
 // on exit
 const doBeforeClose = async () => {
     const valid_refreshtoken = JSON.stringify(Array.from(valid_refreshtoken_set));
-    await users[admin_sheetID].updateContent({ variable: "valid_refreshtoken", content: valid_refreshtoken }, "variable", "valid_refreshtoken", 2);
+    // await users[admin_sheetID].updateContent({ variable: "valid_refreshtoken", content: valid_refreshtoken }, "variable", "valid_refreshtoken", 2);
     process.exit(0);
 };
 
