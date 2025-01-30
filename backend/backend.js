@@ -4,7 +4,11 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import bcrypt from 'bcryptjs';
-import UserController from './modules/postegre/UserController.js';
+<<<<<<< HEAD
+import UserControllerPostgre from './modules/postegre/UserController.js';
+=======
+import UserControllerFirebase from './modules/firebase/UserController.js';
+>>>>>>> firebase
 
 let users = {};
 
@@ -77,6 +81,7 @@ app.post('/register', useAPIToken, async (req, res) => {
 
         res.status(201).json({ message: 'User registered successfully' });
     } catch (err) {
+        console.log(err);
         res.status(500).json({ message: 'Error registering user' });
     }
 });
@@ -186,11 +191,24 @@ app.post('/logout', useAPIToken, async (req, res) => {
     res.json({ message: "Logout successful" });
 });
 
+// Error handling middleware for CORS
+app.use((err, req, res, next) => {
+    console.log(err);
+    if (err && err.code === 'CORS') {
+        console.error('CORS error: ', err);
+        res.status(403).json({ error: 'CORS error: Request blocked' });
+    } else {
+        console.error('error: ', err);
+        next(err);
+    }
+});
+
 // on start
 const admin_sheetID = "13LpsvbsydOoM_aKsjJO3HMmikVutRFnMq-dFsL_LvVc";
 const GLOBAL_VAR_INDEX = 2;
 const REGISTERED_INDEX = 3;
 app.listen(PORT, async () => {
+<<<<<<< HEAD
     const config = {
         dbConfig: {
             host: '0.tcp.sa.ngrok.io',
@@ -200,8 +218,13 @@ app.listen(PORT, async () => {
             password: 'mypassword'
         }
     };
-    users[admin_sheetID] = new UserController(config);
+    users[admin_sheetID] = new UserControllerPostgre(config);
     await users[admin_sheetID].init();
+=======
+    // const config = { sheetID: admin_sheetID, worker: UserController.generateWorker() };
+    // users[admin_sheetID] = new UserController(config);
+    // await users[admin_sheetID].init();
+>>>>>>> firebase
 
     // const global_var = await users[admin_sheetID].getRows(GLOBAL_VAR_INDEX);
     // valid_refreshtoken_set = new Set(JSON.parse(global_var[0].content || '[]'));
@@ -220,13 +243,15 @@ app.listen(PORT, async () => {
     //     await row.instance.save()
     // }
 
+    users[admin_sheetID] = new UserControllerFirebase();
+
     console.log(`Server is running on http://localhost:${PORT}`);
 });
 
 // on exit
 const doBeforeClose = async () => {
     const valid_refreshtoken = JSON.stringify(Array.from(valid_refreshtoken_set));
-    // await users[admin_sheetID].updateContent({ variable: "valid_refreshtoken", content: valid_refreshtoken }, "variable", "valid_refreshtoken", 2);
+    // save valid_refreshtoken
     process.exit(0);
 };
 
