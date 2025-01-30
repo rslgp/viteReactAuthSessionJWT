@@ -4,7 +4,7 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import bcrypt from 'bcryptjs';
-import UserController from './modules/postegre/UserController.js';
+import UserController from './modules/postgre/UserController.js';
 
 let users = {};
 
