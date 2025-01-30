@@ -3,8 +3,8 @@ import { PostgreSQLService } from './PostgreSQLService.js';
 // use env
 const admin_PostgreConfig = {
     dbConfig: {
-        host: '0.tcp.sa.ngrok.io',
-        port: 14491,
+        host: 'localhost',
+        port: 5432,
         database: 'mydatabase',
         user: 'myuser',
         password: 'mypassword'

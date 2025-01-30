@@ -7,6 +7,7 @@ import bcrypt from 'bcryptjs';
 import UserControllerPostgre from './modules/postgre/UserController.js';
 import UserControllerFirebase from './modules/firebase/UserController.js';
 import UserControllerGoogle from './modules/firebase/UserController.js';
+import UserControllerRedis from './modules/redis/UserController.js';
 
 let users = {};
 
@@ -207,7 +208,7 @@ const GLOBAL_VAR_INDEX = 2;
 const REGISTERED_INDEX = 3;
 app.listen(PORT, async () => {
     //POSTGRE
-    users[admin_sheetID] = new UserControllerPostgre();
+    users[admin_sheetID] = new UserControllerRedis();
     await users[admin_sheetID].init();
 
     // GOOGLESHEETS
@@ -233,7 +234,7 @@ app.listen(PORT, async () => {
     // }
 
     // FIREBASE
-    users[admin_sheetID] = new UserControllerFirebase();
+    // users[admin_sheetID] = new UserControllerFirebase();
 
     console.log(`Server is running on http://localhost:${PORT}`);
 });
