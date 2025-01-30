@@ -1,11 +1,18 @@
 import { GoogleSheetService } from './GoogleSheetService.js'
 
+// use env
+const admin_GoogleConfig =
+{
+    sheetID: '',
+    worker: GoogleSheetService.generateWorker("email", "privatekey")
+}
+
 const SHEET_ID = {
     user_pass: 0,
     active_auth_session: 1
 }
 class UserController {
-    constructor(config) {
+    constructor(config = admin_GoogleConfig) {
         const { sheetID, worker } = config;
         this.instance = new GoogleSheetService(sheetID, worker);
     }

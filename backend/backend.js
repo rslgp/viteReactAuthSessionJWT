@@ -4,11 +4,9 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import bcrypt from 'bcryptjs';
-<<<<<<< HEAD
-import UserControllerPostgre from './modules/postegre/UserController.js';
-=======
+import UserControllerPostgre from './modules/postgre/UserController.js';
 import UserControllerFirebase from './modules/firebase/UserController.js';
->>>>>>> firebase
+import UserControllerGoogle from './modules/firebase/UserController.js';
 
 let users = {};
 
@@ -208,23 +206,14 @@ const admin_sheetID = "13LpsvbsydOoM_aKsjJO3HMmikVutRFnMq-dFsL_LvVc";
 const GLOBAL_VAR_INDEX = 2;
 const REGISTERED_INDEX = 3;
 app.listen(PORT, async () => {
-<<<<<<< HEAD
-    const config = {
-        dbConfig: {
-            host: '0.tcp.sa.ngrok.io',
-            port: 14491,
-            database: 'mydatabase',
-            user: 'myuser',
-            password: 'mypassword'
-        }
-    };
-    users[admin_sheetID] = new UserControllerPostgre(config);
+    //POSTGRE
+    users[admin_sheetID] = new UserControllerPostgre();
     await users[admin_sheetID].init();
-=======
+
+    // GOOGLESHEETS
     // const config = { sheetID: admin_sheetID, worker: UserController.generateWorker() };
     // users[admin_sheetID] = new UserController(config);
     // await users[admin_sheetID].init();
->>>>>>> firebase
 
     // const global_var = await users[admin_sheetID].getRows(GLOBAL_VAR_INDEX);
     // valid_refreshtoken_set = new Set(JSON.parse(global_var[0].content || '[]'));
@@ -243,6 +232,7 @@ app.listen(PORT, async () => {
     //     await row.instance.save()
     // }
 
+    // FIREBASE
     users[admin_sheetID] = new UserControllerFirebase();
 
     console.log(`Server is running on http://localhost:${PORT}`);

@@ -2,6 +2,7 @@ import FirebaseRealtimeService from "./FirebaseRealtimeService.js";
 
 import { initializeApp } from "firebase/app";
 
+// use env
 const admin_firebaseConfig = {
     apiKey: "AIzaSyDmzdrnFly1Re-pO2ggSbI8F-i9u6cm6HA",
     authDomain: "jwt-auth-session.firebaseapp.com",
