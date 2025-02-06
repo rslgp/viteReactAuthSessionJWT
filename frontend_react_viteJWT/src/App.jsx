@@ -9,6 +9,15 @@ import { useState, useEffect } from "react";
 //   const decodedPayload = JSON.parse(atob(payload));
 //   console.log(decodedPayload);
 // }
+const ENDPOINT_SERVER = "http://localhost:3001";
+const LINK = {
+  login: ENDPOINT_SERVER + "/login",
+  logout: ENDPOINT_SERVER + "/logout",
+  register: ENDPOINT_SERVER + "/register",
+  protected: ENDPOINT_SERVER + "/protected",
+  revoke_token: ENDPOINT_SERVER + "/revoke_token",
+  refresh_token: ENDPOINT_SERVER + "/refresh",
+}
 
 function App() {
   const jwt_api_token = "13LpsvbsydOoM_aKsjJO3HMmikVutRFnMq-dFsL_LvVc";
@@ -24,7 +33,7 @@ function App() {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch("http://localhost:3001/protected", {
+      const response = await fetch(LINK.protected, {
         method: "GET",
         credentials: "include", // Include cookies
       });
@@ -45,7 +54,7 @@ function App() {
 
   const handleRegister = async () => {
     try {
-      const response = await fetch("http://localhost:3001/register", {
+      const response = await fetch(LINK.register, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -68,7 +77,7 @@ function App() {
 
   const handleLogin = async () => {
     try {
-      const response = await fetch("http://localhost:3001/login", {
+      const response = await fetch(LINK.login, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -93,7 +102,7 @@ function App() {
 
   const handleProtectedRoute = async () => {
     try {
-      const response = await fetch("http://localhost:3001/protected", {
+      const response = await fetch(LINK.protected, {
         method: "GET",
         credentials: "include", // Include cookies
       });
@@ -109,7 +118,7 @@ function App() {
 
   const handleRefreshToken = async () => {
     try {
-      const response = await fetch("http://localhost:3001/refresh", {
+      const response = await fetch(LINK.refresh_token, {
         method: "POST",
         credentials: "include", // Include cookies
       });
@@ -124,7 +133,7 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch("http://localhost:3001/logout", {
+      const response = await fetch(LINK.logout, {
         method: "POST",
         headers: {
           jwt_api_token,
@@ -143,7 +152,7 @@ function App() {
 
   const handleRevoke = async () => {
     try {
-      const response = await fetch("http://localhost:3001/revoke_token", {
+      const response = await fetch(LINK.revoke_token, {
         method: "GET",
         headers: {
           jwt_api_token,
