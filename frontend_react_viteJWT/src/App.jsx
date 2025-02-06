@@ -1,8 +1,31 @@
 import { useState, useEffect } from "react";
 
+// const readJWT = (token) => {
+
+//   // Split the token into its three parts
+//   const [header, payload, signature] = token.split('.');
+
+//   // Decode the Base64-encoded payload
+//   const decodedPayload = JSON.parse(atob(payload));
+//   console.log(decodedPayload);
+// }
+
+// need to use vite.config.js vite proxy
+const ENDPOINT_SERVER = "/api";
+const LINK = {
+  login: ENDPOINT_SERVER + "/login",
+  logout: ENDPOINT_SERVER + "/logout",
+  register: ENDPOINT_SERVER + "/register",
+  protected: ENDPOINT_SERVER + "/protected",
+  revoke_token: ENDPOINT_SERVER + "/revoke_token",
+  refresh_token: ENDPOINT_SERVER + "/refresh",
+}
+
 function App() {
+  const jwt_api_token = "13LpsvbsydOoM_aKsjJO3HMmikVutRFnMq-dFsL_LvVc";
   const [formData, setFormData] = useState({ username: "", password: "" });
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userLogged, setUserLogged] = useState("");
   const [message, setMessage] = useState("");
 
   // Check authentication status on component mount
@@ -12,13 +35,16 @@ function App() {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch("http://localhost:3001/me", {
+      const response = await fetch(LINK.protected, {
         method: "GET",
         credentials: "include", // Include cookies
       });
 
       if (response.ok) {
         setIsAuthenticated(true);
+        const data = await response.json();
+        console.log(data);
+        setUserLogged(data.user.username);
       } else {
         setIsAuthenticated(false);
       }
@@ -30,10 +56,11 @@ function App() {
 
   const handleRegister = async () => {
     try {
-      const response = await fetch("http://localhost:3001/register", {
+      const response = await fetch(LINK.register, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          jwt_api_token,
         },
         body: JSON.stringify({
           username: formData.username,
@@ -52,10 +79,11 @@ function App() {
 
   const handleLogin = async () => {
     try {
-      const response = await fetch("http://localhost:3001/login", {
+      const response = await fetch(LINK.login, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          jwt_api_token,
         },
         credentials: "include", // Include cookies
         body: JSON.stringify({
@@ -66,6 +94,7 @@ function App() {
 
       if (!response.ok) throw new Error("Login failed");
       setIsAuthenticated(true);
+      setUserLogged(formData.username);
       setMessage("Login successful!");
     } catch (error) {
       console.log(error);
@@ -75,7 +104,7 @@ function App() {
 
   const handleProtectedRoute = async () => {
     try {
-      const response = await fetch("http://localhost:3001/protected", {
+      const response = await fetch(LINK.protected, {
         method: "GET",
         credentials: "include", // Include cookies
       });
@@ -91,7 +120,7 @@ function App() {
 
   const handleRefreshToken = async () => {
     try {
-      const response = await fetch("http://localhost:3001/refresh", {
+      const response = await fetch(LINK.refresh_token, {
         method: "POST",
         credentials: "include", // Include cookies
       });
@@ -106,8 +135,11 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      const response = await fetch("http://localhost:3001/logout", {
+      const response = await fetch(LINK.logout, {
         method: "POST",
+        headers: {
+          jwt_api_token,
+        },
         credentials: "include", // Include cookies
       });
 
@@ -117,6 +149,25 @@ function App() {
     } catch (error) {
       console.log(error);
       setMessage("Logout failed.");
+    }
+  };
+
+  const handleRevoke = async () => {
+    try {
+      const response = await fetch(LINK.revoke_token, {
+        method: "GET",
+        headers: {
+          jwt_api_token,
+        },
+        credentials: "include", // Include cookies
+      });
+
+      if (!response.ok) throw new Error("Revoke failed");
+      setIsAuthenticated(false);
+      setMessage("Revoke successful!");
+    } catch (error) {
+      console.log(error);
+      setMessage("Revoke failed.");
     }
   };
 
@@ -161,7 +212,9 @@ function App() {
         <div>
           <button onClick={handleProtectedRoute}>Access Protected Route</button>
           <button onClick={handleRefreshToken}>Refresh Access Token</button>
+          <button onClick={handleRevoke}>Revoke Sessions</button>
           <button onClick={handleLogout}>Logout</button>
+          <p>User logged: {userLogged}</p>
         </div>
       )}
       <p>{message}</p>
