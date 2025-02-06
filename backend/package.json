@@ -20,7 +20,6 @@
     "google-spreadsheet": "^4.1.4",
     "jsonwebtoken": "^9.0.2",
     "pg-promise": "^11.10.2",
-    "firebase": "^11.2.0",
     "ioredis": "^5.4.2"
   }
 }
