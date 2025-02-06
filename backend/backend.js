@@ -4,9 +4,9 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import cookieParser from 'cookie-parser';
 import bcrypt from 'bcryptjs';
-import UserControllerPostgre from './modules/postgre/UserController.js';
-import UserControllerFirebase from './modules/firebase/UserController.js';
-import UserControllerGoogle from './modules/firebase/UserController.js';
+//import UserControllerPostgre from './modules/postgre/UserController.js';
+//import UserControllerFirebase from './modules/firebase/UserController.js';
+//import UserControllerGoogle from './modules/firebase/UserController.js';
 import UserControllerRedis from './modules/redis/UserController.js';
 
 let users = {};
