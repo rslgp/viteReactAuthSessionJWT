@@ -9,7 +9,7 @@ import { useState, useEffect } from "react";
 //   const decodedPayload = JSON.parse(atob(payload));
 //   console.log(decodedPayload);
 // }
-const ENDPOINT_SERVER = "http://localhost:3001";
+const ENDPOINT_SERVER = "/api";
 const LINK = {
   login: ENDPOINT_SERVER + "/login",
   logout: ENDPOINT_SERVER + "/logout",
