@@ -190,6 +190,10 @@ app.post('/logout', useAPIToken, async (req, res) => {
     res.json({ message: "Logout successful" });
 });
 
+app.get('/', async (req,res) => {
+    res.json({ message: "im alive" });
+});
+
 // Error handling middleware for CORS
 app.use((err, req, res, next) => {
     console.log(err);
