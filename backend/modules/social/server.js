@@ -4,6 +4,9 @@ import { authRouter, initAuth, isAuthRoute } from "./routes/auth/core.js";
 
 const app = express();
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 initAuth(app);
 
 // Use authRouter for authentication routes
