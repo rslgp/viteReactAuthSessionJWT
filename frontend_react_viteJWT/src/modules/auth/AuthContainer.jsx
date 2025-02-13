@@ -45,18 +45,24 @@ function AuthContainer({ user, setUser }) {
                     <button onClick={handleLogout}>Logout</button>
                 </div>
             ) : (
-                <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENTID}>
-                    <GoogleLogin
-                        onSuccess={async (credentialResponse) => {
-                            console.log('Login Success:', credentialResponse);
+                <div style={{all: 'initial'}}>
 
-                            await loginWithToken(credentialResponse);
-                        }}
-                        onError={() => {
-                            console.log('Login Failed');
-                        }}
-                    />
-                </GoogleOAuthProvider>
+                    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENTID}>
+                        <GoogleLogin
+                            onSuccess={async (credentialResponse) => {
+                                console.log('Login Success:', credentialResponse);
+
+                                await loginWithToken(credentialResponse);
+                            }}
+                            onError={() => {
+                                console.log('Login Failed');
+                            }}
+
+                            text='continue_with'
+                            size='medium'
+                        />
+                    </GoogleOAuthProvider>
+                </div>
             )}
         </div>
     );
