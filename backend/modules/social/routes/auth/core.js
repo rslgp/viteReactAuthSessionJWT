@@ -56,6 +56,12 @@ const isAuthRoute = (req, res, next) => {
     }
 }
 
+// Check user session
+authRouter.get("/user", isAuthRoute, (req, res) => {
+  res.json(req.user);
+});
+
+
 const initAuth = (app) => {  
   //init middleware
   app.use(session);
