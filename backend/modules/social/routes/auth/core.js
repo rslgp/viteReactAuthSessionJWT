@@ -1,8 +1,11 @@
 import Router from "express";
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import { OAuth2Client } from "google-auth-library";
 
 import session from './persistence/session.js';
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID); // Initialize Google Auth Client LOGIN USING /token
 
 const authRouter = Router();
 
@@ -24,6 +27,51 @@ passport.serializeUser((user, done) => {
 // Deserialize user (retrieve from session)
 passport.deserializeUser((user, done) => {
   done(null, user);
+});
+
+// Google token verification endpoint
+authRouter.post("/google/token", async (req, res) => {
+  console.log(req.body);
+  const { token } = req.body;
+
+  if (!token) {
+    return res.status(400).json({ error: "Token is required" });
+  }
+
+  try {
+    // Verify the token using Google's OAuth2 client
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID, // Ensure the token is for your app
+    });
+
+    const payload = ticket.getPayload();
+    // Payload will contain user data (e.g., email, name, picture)
+    console.log("Google JWT payload:", payload);
+
+    // Find or create the user in your database
+    // You can now use the payload to find or create the user
+    // For simplicity, let's assume the user is created
+
+    // Simulate user object (You can store this in your DB)
+    const user = {
+      id: payload.sub,
+      name: payload.name,
+      email: payload.email,
+      picture: payload.picture,
+    };
+
+    // Serialize user into session (store in session or JWT)
+    req.login(user, (err) => {
+      if (err) {
+        return res.status(500).json({ error: "Login failed" });
+      }
+      res.status(200).json({ user });
+    });
+  } catch (error) {
+    console.error("Error verifying Google token:", error);
+    res.status(401).json({ error: "Invalid token" });
+  }
 });
 
 // Google OAuth login
