@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import axios from 'axios';
 
-const AuthContainer = ({ user, setUser }) => {
-
+const AuthContainer_google = ({ user, setUser }) => {
+    // google LTS
     // on App.jsx
     // const [user, setUser] = useState(() => {
     //     // Initialize user state from localStorage (if available)
@@ -90,4 +90,4 @@ const AuthContainer = ({ user, setUser }) => {
   );
 };
 
-export default AuthContainer;
+export default AuthContainer_google;
