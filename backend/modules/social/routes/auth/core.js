@@ -48,10 +48,12 @@ authRouter.get("/logout", (req, res) => {
 
 const isAuthRoute = (req, res, next) => {
   // middleware
-  if (!req.isAuthenticated()) {
-      return res.redirect("/");
-  }
-  next();
+    if (req.isAuthenticated()) {
+      next();   
+    }else{
+      res.status(401).json({ message: "Not authenticated" });
+      return;
+    }
 }
 
 const initAuth = (app) => {  
