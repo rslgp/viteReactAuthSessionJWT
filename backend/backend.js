@@ -87,6 +87,8 @@ app.post('/register', useAPIToken, async (req, res) => {
 
 // Login endpoint
 app.post('/login', useAPIToken, async (req, res) => {
+    console.log(req.headers['x-real-ip'] , req.headers['x-forwarded-for'] , req.socket.remoteAddress);
+    
     const { username, password } = req.body;
     const user = await users[req.sheetID].get(username);
     console.log(user);
