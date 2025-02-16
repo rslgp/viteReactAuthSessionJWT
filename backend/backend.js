@@ -88,6 +88,7 @@ app.post('/register', useAPIToken, async (req, res) => {
 // Login endpoint
 app.post('/login', useAPIToken, async (req, res) => {
     console.log(req.headers['x-real-ip'] , req.headers['x-forwarded-for'] , req.socket.remoteAddress);
+    //on front can be done https://api.ipify.org/?format=json
     
     const { username, password } = req.body;
     const user = await users[req.sheetID].get(username);
