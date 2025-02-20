@@ -29,6 +29,7 @@ app.use(cors({
 app.use(bodyParser.json());
 app.use(cookieParser());
 app.use(express.json());
+app.set('trust proxy', true); // useful for req.ip
 
 let valid_refreshtoken_set = new Set();
 // Middleware to verify JWT access token
